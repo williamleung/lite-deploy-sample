@@ -1,0 +1,15 @@
+---
+# install rabbitmq container on host
+- include: node_install.yml
+
+# prepare and check clusterting
+- include: cluster_prepare.yml
+  when: rabbitmq_enable_clustering
+
+# do clustering configure if necessary
+- include: cluster_config.yml
+  when: rabbitmq_enable_clustering and clustered.stdout == "0"
+
+- include: user_init.yml
+
+# TODO: supervisor configure on host

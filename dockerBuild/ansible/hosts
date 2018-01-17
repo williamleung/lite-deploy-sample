@@ -1,0 +1,9 @@
+nim-build-01 ansible_connection=local
+
+#nimlite-downloader ansible_ssh_host=192.168.100.10
+
+[builder]
+nim-build-01
+
+[remote_repo]
+nim-build-01

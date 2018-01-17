@@ -1,0 +1,12 @@
+---
+
+# dir for image downloading
+repo_dir: /opt/dist
+
+####################
+# docker image tag
+####################
+
+rabbitmq_img_name: "rabbitmq"
+rabbitmq_img_tag: "3.6.9-nim"
+rabbitmq_img_file: "{{rabbitmq_img_name}}_{{rabbitmq_img_tag}}.tar"

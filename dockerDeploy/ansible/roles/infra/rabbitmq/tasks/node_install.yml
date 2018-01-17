@@ -1,0 +1,33 @@
+---
+## RabbitMq installation
+- name: "[1/4]RabbitMq installing | check rabbitmq image exist"
+  shell: docker images --filter=reference={{rabbitmq_img_name}}:{{rabbitmq_img_tag}} -q | wc -l
+  register: image_count
+
+- name: "[2/4]RabbitMq installing | download image file"
+  get_url:
+    url: http://{{ deploy_repo_addr }}/images/{{ rabbitmq_img_file }}
+    dest: /tmp/
+  when: image_count.stdout == "0"
+
+- name: "[3/4]RabbitMq installing | load image file"
+  shell: docker image load -i /tmp/{{ rabbitmq_img_file }}
+  when: image_count.stdout == "0"
+
+- name: mkdir for rabbitmq install
+  file: name={{ item }} state=directory
+  with_items:
+    - /opt/rabbitmq
+    - "{{ rmq_data_dir_on_host }}"
+
+- name: create supervisor script for rabbitmq
+  template: src=supervisor-run.py dest=/opt/rabbitmq/run.py
+
+- name: add rabbitmq config to supervisor
+  copy: src=supervisor-rabbitmq.conf dest=/etc/supervisor/conf.d/rabbitmq.conf
+
+- name: "[4/4]RabbitMq installing | update supervisor to start rabbitmq"
+  shell: supervisorctl update
+
+- name: check if rabbitmq port open
+  wait_for: timeout=300 port={{ rabbitmq_port }}

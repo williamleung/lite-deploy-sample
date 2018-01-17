@@ -1,0 +1,3 @@
+- hosts: remote_repo
+  roles:
+    - hub

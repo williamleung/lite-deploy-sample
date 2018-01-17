@@ -1,0 +1,38 @@
+---
+### archive the dockerDeploy directory and put it to the repo
+- hosts: builder
+  vars:
+    - package_dst: "/tmp/nim_dep_ansible.tar.gz"
+  tasks:
+    # the cleaner
+    - name: "[1/6]Archiving Deploy Tool | clear the target dir if its not clean"
+      file:
+        name: "/opt/deploy_build/"
+        state: absent
+
+    # the cleaner
+    - name: "[2/6]Archiving Deploy Tool | clear the target dir if its not clean"
+      file:
+        name: "{{ package_dst }}"
+        state: absent
+
+    # make a new directory for build
+    - name: "[3/6]Archiving Deploy Tool | mkdir for deploy build"
+      file:
+        name: "{{ item }}"
+        state: directory
+      register: deploy_build_dir_created
+      with_items:
+        - /opt/deploy_build
+
+    - name: "[4/6]Archiving Deploy Tool | copy all necessary scripts for building"
+      shell: "cp -r /vagrant/dockerDeploy /opt/deploy_build/ "
+
+    - name: "[5/6]Archiving Deploy Tool | archive the packages"
+      shell: "cd /opt/deploy_build; tar -czvf {{ package_dst }} --exclude=dockerDeploy/data --exclude=dockerDeploy/.vagrant dockerDeploy"
+
+    - name: "[6/6]Archiving Deploy Tool | upload file to the dist server"
+      shell: "cp {{ item }} /opt/dist/"
+      with_items:
+        - "{{ package_dst }}"
+        #- /vagrant/setup.sh

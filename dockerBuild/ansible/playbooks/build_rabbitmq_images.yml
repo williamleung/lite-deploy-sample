@@ -1,0 +1,6 @@
+---
+- hosts: builder
+  roles:
+    - rabbitmq
+  tags:
+    - rabbitmq

@@ -1,0 +1,14 @@
+---
+- name: "[1/3]clustering prepare | checking to see if rabbitmq node is running and get the conainter id"
+  shell: docker ps --filter=name={{rabbitmq_container_name}} --filter=status=running -q
+  register: running_id
+
+- name: "[2/3]clustering prepare | checking to see if already clustered"
+  shell: docker exec {{running_id.stdout}}  ls -l /tmp/rabbitmq_cluster_flag | grep -v 'No such' | wc -l
+  register: clustered
+  when: not running_id.stdout=='0'
+
+- name: "[3/3]clustering prepare | checking result report"
+  debug:
+    msg: "Clustering already configured, skipping redo!"
+  when: clustered.stdout != "0"

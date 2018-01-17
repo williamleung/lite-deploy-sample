@@ -1,0 +1,20 @@
+---
+## following tasks only for admin node
+# sync the ssh key for admin node
+#- name: "sync all ssh_keys"
+#  copy:
+#    #src: "~/.ssh/id_rsa"
+#    src: "/vagrant/test/id_rsa"
+#    dest: "/root/.ssh"
+#    mode: 0600
+
+# donwload the nim deploy package
+#- name: "download deploy package"
+#  get_url: "http://223.252.220.223/dl4docker_build/nimlite/nim_dep_ansible.tar.gz"
+#  dest: "/tmp"
+
+- name: "unarchive the deploy package"
+  unarchive:
+    src: "http://192.168.200.10/nim_dep_ansible.tar.gz"
+    dest: /opt/
+    remote_src: yes

@@ -1,0 +1,35 @@
+---
+- name: "[1/8] nim_init | check vhost 'nim' exsitence"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl list_vhosts | grep 'nim' | wc -l
+  register: vhost_nim_count
+  when: inventory_hostname == rabbitmq_master_host
+
+- name: "[2/8]nim_init | create a vhost for nim"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl add_vhost nim
+  when:  inventory_hostname == rabbitmq_master_host  and  vhost_nim_count.stdout=='0'
+
+- name: "[3/8]nim_init | check default user 'nim' exsitence"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl list_users | grep '{{rabbitmq_usr_username_default}}\s' | wc -l
+  register: user_nim_count
+  when: inventory_hostname == rabbitmq_master_host
+
+- name: "[4/8]nim_init | create default user nim"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl add_user {{rabbitmq_usr_username_default}} {{rabbitmq_usr_passwd_default}}
+  register: user_nim_created
+  when: inventory_hostname == rabbitmq_master_host and user_nim_count.stdout=='0'
+
+- name: "[5/8]nim_init | tag the new user as admin"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl set_user_tags {{rabbitmq_usr_username_default}} administrator
+  when:  inventory_hostname == rabbitmq_master_host and user_nim_created['changed']
+
+- name: "[6/8]nim_init | delete the default guest user"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl delete_user guest
+  when:  inventory_hostname == rabbitmq_master_host and user_nim_created['changed']
+
+- name: "[7/8]nim_init | create a vhost for nim"
+  shell: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl set_permissions -p nim {{rabbitmq_usr_username_default}} ".*" ".*" ".*"
+  when:  inventory_hostname == rabbitmq_master_host and user_nim_created['changed']
+
+- name: "[8/8]rabbitmq_clustering | declear default ha policy"
+  shell : docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl set_policy -p nim ha-all ".*" '{"ha-mode":"all"}'
+  when:  inventory_hostname == rabbitmq_master_host and user_nim_created['changed']

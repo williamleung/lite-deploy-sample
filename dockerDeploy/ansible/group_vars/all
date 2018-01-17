@@ -1,0 +1,18 @@
+---
+
+# host for downloading image
+deploy_repo_addr: "{{ hostvars['nimlite-downloader'].ansible_ssh_host }}"
+
+####################
+# docker image tag
+####################
+
+rabbitmq_name_tag: "rabbitmq:3.6.9-nim"
+
+###################
+# rabbitmq config
+###################
+
+rabbitmq_port: 5672
+rabbitmq_nim_username: nim
+rabbitmq_nim_passwd: ilovenim

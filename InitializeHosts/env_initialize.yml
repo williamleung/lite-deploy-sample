@@ -1,0 +1,9 @@
+---
+
+- hosts: target
+  roles:
+     - basics
+
+- hosts: admin
+  roles:
+    - admin

@@ -1,0 +1,28 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+ip_prefix = '192.168.200'
+net_mask = '255.255.255.0'
+the_box = 'debian/jessie64'
+nodes = {
+       'nim-node' => [3, 11],
+   }
+
+Vagrant.configure("2") do |config|
+
+    nodes.each do |prefix, (count, ip_start)|
+        count.times do |i|
+            hostip = "%s.%d" %[ ip_prefix, (ip_start+i)]
+            hostname = "%s-%02d" % [prefix, (i+1)]
+            config.ssh.insert_key = false
+	    config.vm.synced_folder '.', '/vagrant', :disabled => true
+            config.vm.define "#{hostname}" do |box|
+                puts "working on #{hostname} with ip of #{hostip}"
+                box.vm.box = "#{the_box}"
+                box.vm.hostname = "#{hostname}"
+                box.vm.network :private_network, :ip=> "#{hostip}", :netmask=> "#{net_mask}"
+                #box.vm.provision "shell", inline: $script
+            end
+        end
+    end
+end

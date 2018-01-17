@@ -1,0 +1,47 @@
+---
+#
+- name: install docker-py
+  shell: pip install docker-py
+
+# make a new directory for build
+- name: mkdir for rabbitmq build
+  file:
+    name: "{{ item }}"
+    state: directory
+  with_items:
+    - /opt/rabbitmq_build
+
+- name: copy all necessary config for building
+  copy: src=config dest=/opt/rabbitmq_build/ mode=0777
+
+- name: copy all necessary scripts for building
+  copy: src=scripts dest=/opt/rabbitmq_build/ mode=0777
+
+- name: copy all necessary supervisord for building
+  copy: src=supervisor_conf dest=/opt/rabbitmq_build/ mode=0777
+
+- name: create sources.list on host
+  copy: src=sources.list dest=/opt/rabbitmq_build/sources.list
+
+- name: create Dockerfile on host
+  copy: src=Dockerfile dest=/opt/rabbitmq_build/Dockerfile
+
+# do the building with tag, without push to registery
+- name: build {{rabbitmq_img_name}}:{{rabbitmq_img_tag}} docker image
+  docker_image:
+    path: /opt/rabbitmq_build
+    name: "{{rabbitmq_img_name}}"
+    tag: "{{rabbitmq_img_tag}}"
+    push: no
+
+- name: create dist directory
+  file:
+    name: "/opt/dist/images"
+    state: directory
+
+# save this images to the locale directory for building download site
+- name: save images to local {{rabbitmq_img_name}}:{{rabbitmq_img_tag}}
+  docker_image:
+    name:  "{{rabbitmq_img_name}}"
+    tag: "{{rabbitmq_img_tag}}"
+    archive_path: "{{ repo_dir }}/images/{{ rabbitmq_img_file }}"

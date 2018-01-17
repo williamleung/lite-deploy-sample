@@ -1,0 +1,119 @@
+---
+#- name: "backup sources.list to /etc/apt/"
+#  shell: mv /etc/apt/sources.list /etc/apt/sources.list.bak
+- name: "Add IP address of all hosts to all hosts"
+  lineinfile:
+    dest: /etc/hosts
+    line: "{{ hostvars[item].ansible_ssh_host }} {{ hostvars[item].inventory_hostname }} {{ hostvars[item].inventory_hostname_short }}"
+    state: present
+  with_items: "{{ groups['all'] }}"
+
+- name: "reconfigure sshd"
+  shell: "sed -i 's/PasswordAuthentication.*$/PasswordAuthentication yes/' /etc/ssh/sshd_config"
+
+- name: "configure ntpdate cron job"
+  cron:
+    name: "ntpdate job"
+    minute: 0
+    hour: 12
+    job: "ntpdate 0.cn.pool.ntp.org > /dev/null 2>&1"
+    state: present
+
+- name: "configure timezone"
+  shell: "ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime"
+
+## TODO fowlling software installation need to be modified to download from local software repo
+- name: "copy sources.list to /etc/apt/"
+  copy:
+    src: sources.list
+    dest: "/etc/apt/sources.list"
+
+- name: "apt-get update"
+  apt:
+    update_cache: yes
+
+- name: "install basic softwares"
+  apt:
+    name: "{{item}}"
+    state: present
+  with_items:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - tmux
+      - gnupg2
+      - software-properties-common
+      - vim
+      - ntpdate
+      - bridge-utils
+      - sshpass
+      - ifstat
+      - supervisor
+      - build-essential
+      - python-setuptools
+      - python-dev
+
+## install docker from daocloud
+- name: "add daocloud key"
+  get_url:
+    url: "https://download.daocloud.io/docker/linux/debian/gpg"
+    dest: /tmp/daocloud.gpg
+
+- name: Add Apt signing key on remote server to keyring
+  apt_key:
+    id: 7EA0A9C3F273FCD8
+    file: /tmp/daocloud.gpg
+    state: present
+
+- name: "add daocloud repository"
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.daocloud.io/docker/linux/debian jessie stable"
+    state: present
+
+- name: "install docker-ce from daocloud"
+  apt:
+    name: "docker-ce=17.03.2*"
+    state: present
+
+# !!! not necessary for running enviroment
+#- name: "set docker mirror"
+#  shell: "curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s http://e0709a75.m.daocloud.io"
+
+- name: "restart docker service"
+  service:
+    name: docker
+    state: restarted
+
+## install ansible
+- name: "install pip"
+  shell: "easy_install -i http://pypi.douban.com/simple/ pip"
+
+- name: "mkdir .pip directory"
+  file:
+    path: "{{item}}"
+    state: directory
+    mode: 0755
+  with_items:
+    - "~/.pip"
+    - "/root/.pip"
+
+- name: "copy pip.conf "
+  copy:
+    src: "pip.conf"
+    dest: "{{item}}"
+  with_items:
+    - "~/.pip/pip.conf"
+    - "/root/.pip/pip.conf"
+
+- name: "install ansible=2.2.0.0"
+  pip:
+    name: ansible
+    version: 2.2.0.0
+    state: present
+    extra_args: "--trusted-host pypi.douban.com"
+
+- name: "install docker-py"
+  pip:
+    name: docker-py
+    state: present
+    extra_args: "--trusted-host pypi.douban.com"

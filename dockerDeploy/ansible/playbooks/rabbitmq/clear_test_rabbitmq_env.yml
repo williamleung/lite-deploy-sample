@@ -1,0 +1,9 @@
+---
+### 用户测试服务器上销毁Rabbitmq产生的数据
+- hosts: rabbitmq
+  tasks:
+     - name: stop rabbitmq containers
+       shell: docker rm -f $(docker ps --filter=name=rabbitmq -q)
+
+     - name: remove rabbitmq data dir on host
+       shell: rm -rf /home/vagrant/rmq-data/

@@ -1,0 +1,10 @@
+---
+# ONLY install and configure the rabbitmq cluster service
+
+- hosts: rabbitmq
+  vars:
+    - rabbitmq_master_host: "{{groups['rabbitmq-master'][0]}}"
+    - rabbitmq_usr_username_default: 163im
+    - rabbitmq_usr_passwd_default: 123456
+  roles:
+     - infra/rabbitmq

@@ -1,0 +1,12 @@
+---
+
+- name: mkdir deploy repo dir
+  file: path={{ repo_dir }}/images state=directory mode=0755 recurse=yes
+
+- name: install nginx as downloading server
+  apt: name=nginx state=installed
+
+- name: config root path for downloading
+  template: src=default.j2 dest=/etc/nginx/sites-available/default
+  notify: 
+    - restart nginx

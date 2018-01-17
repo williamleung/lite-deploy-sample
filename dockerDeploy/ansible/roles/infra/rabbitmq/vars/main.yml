@@ -1,0 +1,17 @@
+---
+
+# the data volumn for rabbitmq on host server( it' mount to the container /var/lib/rabbitmq
+rmq_data_dir_on_host: "/mnt/data/rmq"
+rmq_erlang_cookie: "thedefaulterlangcookie"
+rmq_vm_mem_hi_watermark: "0.41"
+rabbitmq_enable_clustering: true
+
+#rabbitmq_master_host: "{{groups['rabbitmq-master'][0]}}"
+
+rabbitmq_img_name: "rabbitmq"
+rabbitmq_img_tag: "3.6.9-nim"
+rabbitmq_img_file: "{{rabbitmq_img_name}}_{{rabbitmq_img_tag}}.tar"
+rabbitmq_container_name: "rabbitmq"
+
+rabbitmq_usr_username_default: "{{ rabbitmq_nim_user }}"
+rabbitmq_usr_passwd_default: "{{ rabbitmq_nim_passwd }}"

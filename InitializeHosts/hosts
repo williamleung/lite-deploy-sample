@@ -1,0 +1,13 @@
+
+nim-node-01 ansible_ssh_host=192.168.200.11 
+nim-node-02 ansible_ssh_host=192.168.200.12
+nim-node-03 ansible_ssh_host=192.168.200.13
+
+[target]
+nim-node-01
+nim-node-02
+nim-node-03
+
+[admin]
+nim-node-01
+

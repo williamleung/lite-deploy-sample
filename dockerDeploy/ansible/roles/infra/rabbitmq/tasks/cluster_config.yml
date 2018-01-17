@@ -1,0 +1,82 @@
+---
+- name: "[1/15]rabbitmq_clustering |chmod rabbitmq config file"
+  shell: docker exec {{running_id.stdout}}  chmod -R 777 /etc/rabbitmq
+
+- name: "WAITTING... for rabbitmq node restart done"
+  wait_for:
+    timeout: 10
+
+- name: "[2/15]rabbitmq_clustering | stopping slave node rabbitmq app, master {{rabbitmq_master_host}}"
+  command: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl stop_app
+  when: ansible_hostname != rabbitmq_master_host
+
+- name: "[3/15]rabbitmq_clustering | resetting slave node rabbitmq app, master {{rabbitmq_master_host}}"
+  command: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl reset
+  when: inventory_hostname != rabbitmq_master_host
+
+- name: "WAITTING... for rabbitmq node restart done"
+  wait_for:
+    timeout: 10
+
+- name: "[4/15]rabbitmq_clustering | Capturing Erlang Cookie On Master {{rabbitmq_master_host}}"
+  command: docker exec {{running_id.stdout}} cat /var/lib/rabbitmq/.erlang.cookie
+  register: rmq_master_cookie
+  when: inventory_hostname == rabbitmq_master_host
+
+- name: "[5/15]rabbitmq_clustering | Setting Erlang Cookie Of Master on Non-Master, master {{rabbitmq_master_host}}"
+  set_fact:
+    rmq_master_cookie: "{{ hostvars[rabbitmq_master_host]['rmq_master_cookie']['stdout'] }}"
+  when: inventory_hostname != rabbitmq_master_host
+
+- name: "[6/15]rabbitmq_clustering | syncronize erlang cookie, master {{rabbitmq_master_host}}"
+  command: "docker exec {{running_id.stdout}} sed -i 's/.*$/{{ hostvars[inventory_hostname]['rmq_master_cookie'] }}/' /var/lib/rabbitmq/.erlang.cookie"
+  register: debug_out
+  when: inventory_hostname != rabbitmq_master_host
+
+- name: "[7/15]rabbitmq_clustering | restarting rabbitmq-server container on master {{rabbitmq_master_host}}"
+  command: "docker restart {{running_id.stdout}} "
+  when: inventory_hostname == rabbitmq_master_host
+
+- name: "WAITTING... for rabbitmq node restart done"
+  wait_for:
+    timeout: 10
+
+- name: "[8/15]rabbitmq_clustering | starting rabbitmq app on master {{rabbitmq_master_host}}"
+  command:  docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl start_app
+  register: cluster_master
+  when: inventory_hostname == rabbitmq_master_host
+
+- name: "[9/15]rabbitmq_clustering | restarting rabbitmq-server container on slave, except master {{rabbitmq_master_host}}"
+  command: "docker restart {{running_id.stdout}}"
+  when:  inventory_hostname != rabbitmq_master_host
+
+- name: "WAITTING... for rabbitmq node restart done"
+  wait_for:
+    timeout: 10
+
+- name: "[10/15]rabbitmq_clustering | stopping rabbitmq app on slave, except master {{rabbitmq_master_host}}"
+  command: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl stop_app
+  when:  inventory_hostname != rabbitmq_master_host
+
+- name: "[11/15]rabbitmq_clustering | resetting rabbitmq app node on slave"
+  command: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl reset
+  when:  inventory_hostname != rabbitmq_master_host
+
+- name: "[12/15]rabbitmq_clustering | joinning slave node to cluster, master {{rabbitmq_master_host}}"
+  command: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl join_cluster --ram "rabbit@{{ hostvars[rabbitmq_master_host]['ansible_hostname'] }}"
+  register: cluster_joined
+  when:  inventory_hostname != rabbitmq_master_host
+
+- name: "[13/15]rabbitmq_clustering | start rabbitmq app on slave"
+  command: docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl start_app
+  when:  inventory_hostname != rabbitmq_master_host
+
+- name: "[14/15]rabbitmq_clustering | marking as clustered"
+  command: docker exec {{running_id.stdout}} touch /tmp/rabbitmq_cluster_flag
+  when: >
+          cluster_master['changed'] or
+          cluster_joined['changed']
+
+- name: "[15/15]rabbitmq_clustering | declear default ha policy"
+  command : docker exec {{running_id.stdout}} /usr/lib/rabbitmq/bin/rabbitmqctl set_policy ha-all ".*" '{"ha-mode":"all"}'
+  when:  inventory_hostname == rabbitmq_master_host

@@ -1,0 +1,7 @@
+---
+#
+# Debian
+#
+# tasks file for ansible-rabbitmq
+- include: debian.yml
+  when: ansible_os_family == "Debian"
