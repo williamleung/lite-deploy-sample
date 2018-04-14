@@ -85,7 +85,7 @@ virtualbox为vagrant提供虚拟机支持
 **部署工具机:**   
     host:nim-initializer-01  ip: 192.168.200.110      
 **目标服务器:**   
-    host: nim-node-{01~03} ip: 192.168.200.{11~13}  
+    host: nim-node-{01\~03} ip: 192.168.200.{11\~13}  
 
 **A) 在打包构建机上**   
     1. 构建修改之后的RabbitMQ软件Docker镜像
